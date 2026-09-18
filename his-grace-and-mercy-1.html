@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>His Grace and Mercy</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FBF8F2;
+    --ink:#1A2340;
+    --navy:#152252;
+    --gold:#D8A63D;
+    --skyline:#3F6FB0;
+    --sky:#DCE7F5;
+    --line:#D9D2C3;
+    --paper-dim:#F3EEE1;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Work Sans', sans-serif;
+    font-weight:400;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    line-height:1.12;
+    letter-spacing:-0.01em;
+  }
+  a{color:inherit;}
+  img,svg{display:block; max-width:100%;}
+  .wrap{max-width:1100px; margin:0 auto; padding:0 28px;}
+  :focus-visible{outline:2px solid var(--navy); outline-offset:3px;}
+
+  /* NAV */
+  header{
+    position:sticky; top:0; z-index:50;
+    background:rgba(251,248,242,0.94);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);
+  }
+  nav.wrap{display:flex; align-items:center; justify-content:space-between; padding:16px 28px; gap:16px;}
+  .brand{display:flex; align-items:center; gap:12px;}
+  .brand-name{font-family:'Fraunces', serif; font-size:1.05rem; font-weight:600; line-height:1.2; max-width:220px;}
+  .brand-name small{display:block; font-family:'Work Sans',sans-serif; font-weight:500; font-size:0.68rem; letter-spacing:0.03em; color:#5B655F; margin-top:2px;}
+  .navlinks{display:flex; gap:26px; list-style:none; font-size:0.92rem;}
+  .navlinks a{text-decoration:none;}
+  .navlinks a:hover{color:var(--skyline);}
+  .navtoggle{display:none; background:none; border:none; font-size:1.6rem; cursor:pointer; color:var(--ink);}
+
+  @media (max-width:800px){
+    .navlinks{
+      position:absolute; top:100%; left:0; right:0;
+      background:var(--paper); flex-direction:column; gap:0;
+      max-height:0; overflow:hidden; border-bottom:1px solid var(--line);
+      transition:max-height 0.3s ease;
+    }
+    .navlinks.open{max-height:320px;}
+    .navlinks a{display:block; padding:14px 28px; border-top:1px solid var(--line);}
+    .navtoggle{display:block;}
+  }
+
+  /* HERO */
+  .hero{padding:56px 0 40px;}
+  .hero-grid{display:grid; grid-template-columns:1.15fr 0.85fr; gap:40px; align-items:start;}
+  .hero h1{font-size:clamp(2.2rem, 4.6vw, 3.6rem); max-width:14ch;}
+  .hero .lede{margin-top:20px; font-size:1.1rem; max-width:42ch; color:#3E4A54;}
+  .hero-cta{margin-top:30px; display:flex; gap:16px; flex-wrap:wrap;}
+  .btn{display:inline-block; padding:13px 26px; border-radius:3px; text-decoration:none; font-size:0.95rem; font-weight:500; border:1px solid transparent;}
+  .btn-solid{background:var(--navy); color:var(--paper);}
+  .btn-outline{border-color:var(--ink); color:var(--ink);}
+
+  .hero-card{background:var(--navy); color:var(--paper); border-radius:6px; padding:30px 28px; position:relative;}
+  .hero-card::before{content:""; position:absolute; top:-14px; left:-14px; width:56px; height:56px; background:var(--gold); border-radius:50%; z-index:-1;}
+  .hero-card .label{font-size:0.82rem; color:var(--sky); margin-bottom:8px;}
+  .hero-card .time{font-family:'Fraunces', serif; font-size:1.3rem; padding:9px 0; border-top:1px solid rgba(251,248,242,0.18);}
+  .hero-card .time:first-of-type{border-top:none;}
+  .hero-card .time span{display:block; font-family:'Work Sans',sans-serif; font-size:0.8rem; color:var(--sky); margin-top:2px;}
+
+  @media (max-width:760px){.hero-grid{grid-template-columns:1fr;}}
+
+  /* EVENT BANNER */
+  .event{padding:64px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); background:var(--paper-dim);}
+  .event-grid{display:grid; grid-template-columns:0.85fr 1.15fr; gap:48px; align-items:center;}
+  .event-tag{display:inline-block; background:var(--gold); color:var(--navy); font-size:0.78rem; font-weight:600; padding:5px 12px; border-radius:3px; margin-bottom:16px;}
+  .event h2{font-size:clamp(1.9rem,3.4vw,2.7rem); max-width:12ch;}
+  .event .theme{font-family:'Fraunces', serif; font-style:italic; color:var(--skyline); margin-top:10px; font-size:1.1rem;}
+  .event-details{margin-top:24px; display:flex; flex-direction:column; gap:10px; font-size:0.98rem;}
+  .event-details .row{display:flex; gap:10px;}
+  .event-details .k{color:#5B655F; min-width:110px;}
+  .event p.note{margin-top:20px; max-width:48ch; color:#3E4A54;}
+  .flyer-frame{border-radius:8px; overflow:hidden; border:1px solid var(--line); box-shadow:0 10px 30px rgba(21,34,82,0.12);}
+  .flyer-frame img{width:100%;}
+  @media (max-width:800px){.event-grid{grid-template-columns:1fr;} .flyer-frame{order:-1; max-width:320px; margin:0 auto;}}
+
+  /* WELCOME */
+  .welcome{padding:76px 0;}
+  .welcome-grid{display:grid; grid-template-columns:0.9fr 1.1fr; gap:56px; align-items:center;}
+  .welcome h2{font-size:clamp(1.8rem,3vw,2.3rem); max-width:16ch;}
+  .welcome p{margin-top:16px; max-width:52ch; color:#3E4A54;}
+  .verse-shape{aspect-ratio:4/5; border-radius:6px; background:linear-gradient(160deg, var(--sky) 0%, var(--skyline) 55%, var(--navy) 100%); position:relative; padding:32px; display:flex; align-items:flex-end;}
+  .verse-shape blockquote{color:var(--paper); font-family:'Fraunces',serif; font-style:italic; font-size:1.15rem; line-height:1.4;}
+  .verse-shape blockquote cite{display:block; font-family:'Work Sans',sans-serif; font-style:normal; font-size:0.82rem; color:var(--sky); margin-top:10px;}
+  @media (max-width:760px){.welcome-grid{grid-template-columns:1fr; gap:32px;} .verse-shape{order:-1; max-width:300px;}}
+
+  /* SCHEDULE */
+  .week{padding:76px 0; background:var(--paper-dim); border-top:1px solid var(--line); border-bottom:1px solid var(--line);}
+  .week h2{font-size:clamp(1.8rem,3vw,2.3rem);}
+  .week-sub{color:#3E4A54; margin-top:12px; max-width:50ch;}
+  .rhythm{margin-top:40px; display:flex; flex-direction:column;}
+  .rhythm-row{display:grid; grid-template-columns:120px 1fr; gap:24px; padding:20px 0; border-top:1px solid var(--line);}
+  .rhythm-row:last-child{border-bottom:1px solid var(--line);}
+  .rhythm-row .day{font-family:'Fraunces', serif; font-size:1.05rem; color:var(--skyline);}
+  .rhythm-row .items{display:flex; flex-direction:column; gap:8px;}
+  .rhythm-row .what{font-weight:500;}
+  .rhythm-row .when{color:#5B655F; font-size:0.9rem;}
+  @media (max-width:600px){.rhythm-row{grid-template-columns:1fr; gap:6px;}}
+
+  /* JOIN */
+  .join{padding:76px 0; border-bottom:1px solid var(--line);}
+  .join-grid{display:grid; grid-template-columns:0.9fr 1.1fr; gap:56px; align-items:start;}
+  .join h2{font-size:clamp(1.8rem,3vw,2.3rem); max-width:14ch;}
+  .join p{margin-top:16px; max-width:44ch; color:#3E4A54;}
+  form.workforce{display:flex; flex-direction:column; gap:18px;}
+  .field{display:flex; flex-direction:column; gap:6px;}
+  .field label{font-size:0.88rem; color:#3E4A54;}
+  .field input[type="text"],
+  .field input[type="tel"],
+  .field input[type="email"],
+  .field textarea{
+    border:1px solid var(--line); border-radius:3px; padding:11px 12px;
+    font:inherit; font-size:0.95rem; background:var(--paper); color:var(--ink);
+  }
+  .field textarea{resize:vertical; min-height:90px;}
+  .field input:focus, .field textarea:focus{outline:2px solid var(--navy); outline-offset:1px; border-color:var(--navy);}
+  .checks{display:flex; flex-wrap:wrap; gap:10px 20px;}
+  .check{display:flex; align-items:center; gap:8px; font-size:0.92rem;}
+  .join .btn-solid{align-self:flex-start; border:none; cursor:pointer;}
+  .join-confirm{
+    display:none; margin-top:18px; padding:16px 18px; border-radius:4px;
+    background:var(--paper-dim); border:1px solid var(--line); font-size:0.92rem;
+  }
+  .join-confirm.show{display:block;}
+  @media (max-width:800px){.join-grid{grid-template-columns:1fr; gap:28px;}}
+
+  /* GIVE */
+  .give{background:var(--navy); color:var(--paper); padding:76px 0;}
+  .give-grid{display:grid; grid-template-columns:1.1fr 0.9fr; gap:48px; align-items:center;}
+  .give h2{font-size:clamp(1.8rem,3vw,2.3rem); color:var(--paper);}
+  .give p{margin-top:14px; color:var(--sky); max-width:46ch;}
+  .give-box{background:rgba(251,248,242,0.08); border:1px solid rgba(251,248,242,0.25); border-radius:6px; padding:26px;}
+  .give-box .row{display:flex; justify-content:space-between; padding:11px 0; border-top:1px solid rgba(251,248,242,0.2); font-size:0.94rem; gap:12px;}
+  .give-box .row:first-child{border-top:none;}
+  .give-box .row span:first-child{color:var(--sky);}
+  @media (max-width:760px){.give-grid{grid-template-columns:1fr;}}
+
+  /* VISIT */
+  .visit{padding:76px 0; border-bottom:1px solid var(--line);}
+  .visit-grid{display:grid; grid-template-columns:1fr 1fr; gap:56px;}
+  .visit h2{font-size:clamp(1.8rem,3vw,2.3rem);}
+  .visit dl{margin-top:26px;}
+  .visit dt{font-size:0.82rem; color:#5B655F; margin-top:18px;}
+  .visit dt:first-child{margin-top:0;}
+  .visit dd{font-size:1.02rem; margin-top:3px;}
+  .map-shape{border-radius:6px; background:var(--paper-dim); border:1px solid var(--line); aspect-ratio:4/3; overflow:hidden;}
+  @media (max-width:760px){.visit-grid{grid-template-columns:1fr; gap:32px;} .map-shape{order:-1;}}
+
+  /* FOOTER */
+  footer{padding:40px 0;}
+  .footer-grid{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; font-size:0.88rem; color:#5B655F;}
+  .footer-grid .fbrand{font-family:'Fraunces', serif; color:var(--ink); font-size:1rem;}
+  .hidden{display:none !important;}
+</style>
+</head>
+<body>
+
+<header>
+  <nav class="wrap">
+    <div class="brand">
+      <div class="brand-name">His Grace and Mercy<small>Interdenominational Prayer Ministry</small></div>
+    </div>
+    <button class="navtoggle" aria-label="Toggle navigation" onclick="document.getElementById('navlinks').classList.toggle('open')">&#9776;</button>
+    <ul class="navlinks" id="navlinks">
+      <li><a href="#event">12 Hours With God</a></li>
+      <li><a href="#welcome">About</a></li>
+      <li><a href="#week">Schedule</a></li>
+      <li><a href="#join">Join the Workforce</a></li>
+      <li><a href="#give">Give</a></li>
+      <li><a href="#visit">Visit</a></li>
+    </ul>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <h1>A house of prayer for every nation</h1>
+      <p class="lede">His Grace and Mercy is a church in Powerline, Siba Apata, Ibadan, built around prayer, the Word, and worship &mdash; from Sunday service to weekday intercession.</p>
+      <div class="hero-cta">
+        <a href="#event" class="btn btn-solid">See our upcoming programme</a>
+        <a href="#visit" class="btn btn-outline">Plan your visit</a>
+      </div>
+    </div>
+    <div class="hero-card">
+      <div class="label">Sunday</div>
+      <div class="time">10:00 AM &ndash; 12:00 PM<span>Sunday service</span></div>
+      <div class="time">8:30 &ndash; 9:30 AM<span>Sunday school</span></div>
+      <div class="time">8:00 &ndash; 8:30 AM<span>Workers' prayer</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="event" id="event">
+  <div class="wrap event-grid">
+    <div>
+      <span class="event-tag">Upcoming programme</span>
+      <h2 id="ev-title">12 Hours With God</h2>
+      <div class="theme" id="ev-theme">Theme: Alpha and Omega (Ib&#232;r&#232; &Aacute;ti &Oacute;pin) &mdash; Revelation 1:8</div>
+      <div class="event-details">
+        <div class="row"><span class="k">Date</span><span id="ev-date">Thursday, October 1st, 2026</span></div>
+        <div class="row"><span class="k">Time</span><span id="ev-time">6:00 AM &ndash; 6:00 PM</span></div>
+        <div class="row"><span class="k">Featuring</span><span id="ev-featuring">Salvation, healing, liberation, and more</span></div>
+        <div class="row"><span class="k">Ministering</span><span id="ev-ministering">Pastor T. John Ojo and other ministers of God</span></div>
+        <div class="row"><span class="k">Enquiries</span><span id="ev-enquiries">08062633991 &middot; 09044694364</span></div>
+      </div>
+      <p class="note" id="ev-note">God bless you as you come.</p>
+    </div>
+    <div class="flyer-frame">
+      <img src="12-hours-with-god-flyer.png" alt="12 Hours With God programme flyer &mdash; Thursday October 1st, 2026, 6am to 6pm">
+    </div>
+  </div>
+</section>
+
+<section class="welcome" id="welcome">
+  <div class="wrap welcome-grid">
+    <div class="verse-shape">
+      <blockquote>&ldquo;I am the Alpha and the Omega, the beginning and the end.&rdquo;<cite>Revelation 1:8</cite></blockquote>
+    </div>
+    <div>
+      <h2>Interdenominational, and open to everyone</h2>
+      <p>We're a prayer ministry first &mdash; a place where intercessors, choir members, Bible study groups, and Sunday worshippers all have a home, regardless of the denomination you grew up in.</p>
+      <p>If you've never joined a prayer meeting before, Thursday's Hour of Grace and Mercy or Sunday service are both easy places to start.</p>
+    </div>
+  </div>
+</section>
+
+<section class="week" id="week">
+  <div class="wrap">
+    <h2>Our weekly rhythm</h2>
+    <p class="week-sub">Something is happening most days &mdash; come for whichever fits your week.</p>
+    <div class="rhythm" id="rhythm-container">
+      <div class="rhythm-row">
+        <div class="day">Monday</div>
+        <div class="items"><div><div class="what">Prayer intercessors</div><div class="when">6:00 &ndash; 7:00 PM</div></div></div>
+      </div>
+      <div class="rhythm-row">
+        <div class="day">Tuesday</div>
+        <div class="items"><div><div class="what">Bible study</div><div class="when">5:30 &ndash; 6:30 PM</div></div></div>
+      </div>
+      <div class="rhythm-row">
+        <div class="day">Wednesday</div>
+        <div class="items"><div><div class="what">Choir rehearsal</div><div class="when">5:00 &ndash; 6:00 PM</div></div></div>
+      </div>
+      <div class="rhythm-row">
+        <div class="day">Thursday</div>
+        <div class="items"><div><div class="what">Hour of Grace and Mercy</div><div class="when">8:00 &ndash; 10:00 AM</div></div></div>
+      </div>
+      <div class="rhythm-row">
+        <div class="day">Saturday</div>
+        <div class="items">
+          <div><div class="what">Choir rehearsal</div><div class="when">4:00 &ndash; 5:00 PM</div></div>
+          <div><div class="what">Sunday school prep</div><div class="when">5:00 &ndash; 6:00 PM</div></div>
+        </div>
+      </div>
+      <div class="rhythm-row">
+        <div class="day">Sunday</div>
+        <div class="items">
+          <div><div class="what">Workers' prayer</div><div class="when">8:00 &ndash; 8:30 AM</div></div>
+          <div><div class="what">Sunday school</div><div class="when">8:30 &ndash; 9:30 AM</div></div>
+          <div><div class="what">Sunday service</div><div class="when">10:00 AM &ndash; 12:00 PM</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="join" id="join">
+  <div class="wrap join-grid">
+    <div>
+      <h2>Join the workforce</h2>
+      <p>Every department &mdash; choir, ushering, intercessors, media, welfare, Sunday school &mdash; runs on people who said yes. If you'd like to serve, tell us a bit about yourself and we'll follow up.</p>
+    </div>
+    <div>
+      <form class="workforce" id="workforceForm" action="https://formsubmit.co/johnojotaiwo@gmail.com" method="POST">
+        <input type="hidden" name="_subject" value="New workforce sign-up — His Grace and Mercy">
+        <input type="hidden" name="_captcha" value="false">
+        <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
+        <div class="field">
+          <label for="wf-name">Full name</label>
+          <input type="text" id="wf-name" name="name" required>
+        </div>
+        <div class="field">
+          <label for="wf-phone">Phone number</label>
+          <input type="tel" id="wf-phone" name="phone" required>
+        </div>
+        <div class="field">
+          <label for="wf-email">Email (optional)</label>
+          <input type="email" id="wf-email" name="email">
+        </div>
+        <div class="field">
+          <label>Where would you like to serve?</label>
+          <div class="checks">
+            <label class="check"><input type="checkbox" name="area" value="Choir">Choir</label>
+            <label class="check"><input type="checkbox" name="area" value="Ushering">Ushering</label>
+            <label class="check"><input type="checkbox" name="area" value="Prayer intercessors">Prayer intercessors</label>
+            <label class="check"><input type="checkbox" name="area" value="Media & sound">Media &amp; sound</label>
+            <label class="check"><input type="checkbox" name="area" value="Welfare">Welfare</label>
+            <label class="check"><input type="checkbox" name="area" value="Sunday school">Sunday school</label>
+            <label class="check"><input type="checkbox" name="area" value="Other">Other</label>
+          </div>
+        </div>
+        <div class="field">
+          <label for="wf-message">Anything else you'd like us to know?</label>
+          <textarea id="wf-message" name="message"></textarea>
+        </div>
+        <button type="submit" class="btn btn-solid" id="wfSubmit">Send my interest</button>
+        <div class="join-confirm" id="wfConfirm">Thank you &mdash; we've received your interest and a member of the team will reach out soon.</div>
+        <div class="join-confirm" id="wfError">Something went wrong sending that. Please try again, or call 08062633991.</div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<section class="give" id="give">
+  <div class="wrap give-grid">
+    <div>
+      <h2>Give</h2>
+      <p>Your giving supports the ministry's outreach, programmes like 12 Hours With God, and the day-to-day work of the prayer house.</p>
+    </div>
+    <div class="give-box">
+      <div class="row"><span>By phone</span><span>08062633991</span></div>
+      <div class="row"><span>By phone</span><span>09044694364</span></div>
+      <div class="row"><span>In person</span><span>Powerline, Siba Apata, Ibadan</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="visit" id="visit">
+  <div class="wrap visit-grid">
+    <div>
+      <h2>Visit us</h2>
+      <dl>
+        <dt>Address</dt>
+        <dd>Powerline, Siba Apata<br>Ibadan, Oyo State</dd>
+        <dt>Sunday service</dt>
+        <dd>10:00 AM &ndash; 12:00 PM</dd>
+        <dt>Phone</dt>
+        <dd>08062633991 &middot; 09044694364</dd>
+        <dt>Leadership</dt>
+        <dd>Pastor T. John Ojo</dd>
+      </dl>
+    </div>
+    <div class="map-shape">
+      <iframe
+        src="https://www.google.com/maps?q=Powerline%2C+Siba+Apata%2C+Ibadan&output=embed"
+        style="width:100%; height:100%; border:0;"
+        loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade"
+        title="Map to His Grace and Mercy, Powerline, Siba Apata, Ibadan">
+      </iframe>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap footer-grid">
+    <div class="fbrand">His Grace and Mercy</div>
+    <div>Powerline, Siba Apata, Ibadan &middot; 08062633991</div>
+  </div>
+  <div class="wrap" style="margin-top:10px;">
+    <a href="#admin" id="adminLinkToggle" style="font-size:0.78rem; color:var(--muted); text-decoration:none;">Admin</a>
+  </div>
+</footer>
+
+<!-- ================= ADMIN PANEL ================= -->
+<section id="adminPanel" class="hidden" style="padding:60px 0; background:var(--paper-dim); border-top:1px solid var(--line);">
+  <div class="wrap">
+
+    <div id="adminLoginBox" style="max-width:340px;">
+      <h2 style="font-size:1.4rem; margin-bottom:14px;">Admin sign-in</h2>
+      <input type="password" id="adminPassInput" placeholder="Admin password" style="width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:4px; margin-bottom:12px;">
+      <button id="adminLoginBtn" class="btn btn-solid">Sign in</button>
+      <div id="adminLoginNote" style="margin-top:8px; font-size:0.85rem; color:#8A6400;"></div>
+    </div>
+
+    <div id="adminDashboard" class="hidden">
+      <div class="event-tag" style="margin-bottom:10px;">Admin dashboard</div>
+
+      <h2 style="font-size:1.5rem; margin-bottom:16px;">Workforce sign-ups</h2>
+      <div id="signupList" style="margin-bottom:50px;"></div>
+
+      <h2 style="font-size:1.5rem; margin-bottom:16px;">Edit upcoming programme</h2>
+      <div style="display:flex; flex-direction:column; gap:12px; max-width:520px; margin-bottom:50px;">
+        <input type="text" id="edit-title" placeholder="Programme title">
+        <input type="text" id="edit-theme" placeholder="Theme line">
+        <input type="text" id="edit-date" placeholder="Date">
+        <input type="text" id="edit-time" placeholder="Time">
+        <input type="text" id="edit-featuring" placeholder="Featuring">
+        <input type="text" id="edit-ministering" placeholder="Ministering">
+        <input type="text" id="edit-enquiries" placeholder="Enquiries / phone">
+        <input type="text" id="edit-note" placeholder="Closing note">
+        <button id="saveEventBtn" class="btn btn-solid" style="align-self:flex-start;">Save programme details</button>
+        <div id="saveEventNote" style="font-size:0.85rem; color:#8A6400;"></div>
+      </div>
+
+      <h2 style="font-size:1.5rem; margin-bottom:16px;">Edit weekly rhythm</h2>
+      <p style="color:#5B655F; font-size:0.9rem; margin-bottom:12px; max-width:52ch;">One line per day. Format: <code>Day | What | When</code>, e.g. <code>Monday | Prayer intercessors | 6:00–7:00 PM</code>. For a day with more than one item, add extra lines with the same day.</p>
+      <textarea id="edit-schedule" rows="10" style="width:100%; max-width:600px; padding:12px; border:1px solid var(--line); border-radius:4px; font-family:monospace; font-size:0.85rem;"></textarea>
+      <div><button id="saveScheduleBtn" class="btn btn-solid" style="margin-top:12px;">Save schedule</button></div>
+      <div id="saveScheduleNote" style="font-size:0.85rem; color:#8A6400; margin-top:6px;"></div>
+    </div>
+
+  </div>
+</section>
+
+<script>
+  // Workforce sign-up form — sends submissions to johnojotaiwo@gmail.com via FormSubmit.co.
+  // NOTE: the very first submission triggers a one-time confirmation email from FormSubmit
+  // to that address — it must be clicked once before further submissions arrive normally.
+  const wfForm = document.getElementById('workforceForm');
+  const wfSubmit = document.getElementById('wfSubmit');
+  const wfConfirm = document.getElementById('wfConfirm');
+  const wfError = document.getElementById('wfError');
+
+  wfForm.addEventListener('submit', async function(e){
+    e.preventDefault();
+    wfError.classList.remove('show');
+    wfSubmit.disabled = true;
+    wfSubmit.textContent = 'Sending...';
+    try{
+      const res = await fetch('https://formsubmit.co/ajax/johnojotaiwo@gmail.com', {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        body: new FormData(wfForm)
+      });
+      if(!res.ok) throw new Error('Request failed');
+      wfConfirm.classList.add('show');
+      wfForm.reset();
+      wfConfirm.scrollIntoView({behavior:'smooth', block:'nearest'});
+    }catch(err){
+      wfError.classList.add('show');
+    }finally{
+      wfSubmit.disabled = false;
+      wfSubmit.textContent = 'Send my interest';
+    }
+  });
+</script>
+
+<script>
+  // ---------------- Firebase backend ----------------
+  // Reuses the same Firebase project as ClassBridge, under its own collection path.
+  const firebaseConfig = {
+    apiKey: "AIzaSyBxnSdloRYyGxnrah-G2mp-8zLsFbgFFNs",
+    authDomain: "classbridge-f0c58.firebaseapp.com",
+    projectId: "classbridge-f0c58",
+    storageBucket: "classbridge-f0c58.firebasestorage.app",
+    messagingSenderId: "409747524699",
+    appId: "1:409747524699:web:3d8932b9c8974ed901037e"
+  };
+  let db = null;
+  try{
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+  }catch(e){ console.error('Firebase init failed', e); }
+
+  const SITE_PATH = 'sites/hisgraceandmercy';
+  const ADMIN_PASSWORD = 'hgm-admin-2026';
+
+  function esc(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ---- Load & render public content (event + schedule) ----
+  if(db){
+    db.doc(SITE_PATH).get().then(doc=>{
+      if(!doc.exists) return;
+      const d = doc.data();
+      if(d.event){
+        const ev = d.event;
+        if(ev.title) document.getElementById('ev-title').textContent = ev.title;
+        if(ev.theme) document.getElementById('ev-theme').textContent = ev.theme;
+        if(ev.date) document.getElementById('ev-date').textContent = ev.date;
+        if(ev.time) document.getElementById('ev-time').textContent = ev.time;
+        if(ev.featuring) document.getElementById('ev-featuring').textContent = ev.featuring;
+        if(ev.ministering) document.getElementById('ev-ministering').textContent = ev.ministering;
+        if(ev.enquiries) document.getElementById('ev-enquiries').textContent = ev.enquiries;
+        if(ev.note) document.getElementById('ev-note').textContent = ev.note;
+      }
+      if(d.schedule && d.schedule.length){
+        renderSchedule(d.schedule);
+      }
+    }).catch(err=>console.error('content load failed', err));
+  }
+
+  function renderSchedule(days){
+    const container = document.getElementById('rhythm-container');
+    container.innerHTML = days.map(day => {
+      const items = day.items.map(it =>
+        '<div><div class="what">'+esc(it.what)+'</div><div class="when">'+esc(it.when)+'</div></div>'
+      ).join('');
+      return '<div class="rhythm-row"><div class="day">'+esc(day.day)+'</div><div class="items">'+items+'</div></div>';
+    }).join('');
+  }
+
+  function parseScheduleText(text){
+    const days = [];
+    const map = {};
+    text.split('\n').forEach(line=>{
+      const parts = line.split('|').map(p=>p.trim());
+      if(parts.length < 3 || !parts[0]) return;
+      const [day, what, when] = parts;
+      if(!map[day]){ map[day] = {day, items: []}; days.push(map[day]); }
+      map[day].items.push({what, when});
+    });
+    return days;
+  }
+
+  function scheduleToText(days){
+    const lines = [];
+    (days || []).forEach(day=>{
+      day.items.forEach(it=>{
+        lines.push(day.day + ' | ' + it.what + ' | ' + it.when);
+      });
+    });
+    return lines.join('\n');
+  }
+
+  // ---- Dual-write workforce submissions to Firestore ----
+  if(db){
+    wfForm.addEventListener('submit', function(){
+      const data = new FormData(wfForm);
+      const areas = data.getAll('area');
+      db.collection(SITE_PATH + '/workforce').add({
+        name: data.get('name') || '',
+        phone: data.get('phone') || '',
+        email: data.get('email') || '',
+        areas,
+        message: data.get('message') || '',
+        ts: Date.now()
+      }).catch(err=>console.error('workforce write failed', err));
+    });
+  }
+
+  // ---- Admin panel ----
+  const adminPanel = document.getElementById('adminPanel');
+  const adminLoginBox = document.getElementById('adminLoginBox');
+  const adminDashboard = document.getElementById('adminDashboard');
+
+  document.getElementById('adminLinkToggle').addEventListener('click', (e)=>{
+    e.preventDefault();
+    adminPanel.classList.remove('hidden');
+    adminPanel.scrollIntoView({behavior:'smooth'});
+  });
+
+  document.getElementById('adminLoginBtn').addEventListener('click', ()=>{
+    const val = document.getElementById('adminPassInput').value;
+    const note = document.getElementById('adminLoginNote');
+    if(val === ADMIN_PASSWORD){
+      adminLoginBox.classList.add('hidden');
+      adminDashboard.classList.remove('hidden');
+      loadAdminData();
+    } else {
+      note.textContent = 'Incorrect password.';
+    }
+  });
+
+  function loadAdminData(){
+    if(!db) return;
+    // Sign-ups
+    db.collection(SITE_PATH + '/workforce').orderBy('ts','desc').limit(100).onSnapshot(snap=>{
+      const list = document.getElementById('signupList');
+      const items = snap.docs.map(d=>d.data());
+      if(!items.length){ list.innerHTML = '<p style="color:#5B655F;">No sign-ups yet.</p>'; return; }
+      list.innerHTML = items.map(s=>{
+        const when = new Date(s.ts).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+        return '<div style="background:#fff; border:1px solid var(--line); border-radius:6px; padding:14px 16px; margin-bottom:10px;">' +
+          '<div style="font-weight:600;">'+esc(s.name)+'</div>' +
+          '<div style="font-size:0.9rem; color:#5B655F;">'+esc(s.phone)+(s.email?' &middot; '+esc(s.email):'')+'</div>' +
+          '<div style="font-size:0.9rem; margin-top:4px;">'+esc((s.areas||[]).join(', '))+'</div>' +
+          (s.message ? '<div style="font-size:0.9rem; margin-top:4px; color:#3E4A54;">'+esc(s.message)+'</div>' : '') +
+          '<div style="font-size:0.78rem; color:#8A94A0; margin-top:6px;">'+when+'</div>' +
+        '</div>';
+      }).join('');
+    }, err=>console.error('signups sub failed', err));
+
+    // Event fields
+    db.doc(SITE_PATH).get().then(doc=>{
+      const d = doc.exists ? doc.data() : {};
+      const ev = d.event || {};
+      document.getElementById('edit-title').value = ev.title || document.getElementById('ev-title').textContent;
+      document.getElementById('edit-theme').value = ev.theme || document.getElementById('ev-theme').textContent;
+      document.getElementById('edit-date').value = ev.date || document.getElementById('ev-date').textContent;
+      document.getElementById('edit-time').value = ev.time || document.getElementById('ev-time').textContent;
+      document.getElementById('edit-featuring').value = ev.featuring || document.getElementById('ev-featuring').textContent;
+      document.getElementById('edit-ministering').value = ev.ministering || document.getElementById('ev-ministering').textContent;
+      document.getElementById('edit-enquiries').value = ev.enquiries || document.getElementById('ev-enquiries').textContent;
+      document.getElementById('edit-note').value = ev.note || document.getElementById('ev-note').textContent;
+
+      const scheduleRows = document.querySelectorAll('#rhythm-container .rhythm-row');
+      let fallbackSchedule = [];
+      scheduleRows.forEach(row=>{
+        const day = row.querySelector('.day').textContent;
+        const items = [...row.querySelectorAll('.items > div')].map(it=>({
+          what: it.querySelector('.what').textContent,
+          when: it.querySelector('.when').textContent
+        }));
+        fallbackSchedule.push({day, items});
+      });
+      document.getElementById('edit-schedule').value = scheduleToText(d.schedule && d.schedule.length ? d.schedule : fallbackSchedule);
+    });
+  }
+
+  document.getElementById('saveEventBtn').addEventListener('click', async ()=>{
+    const note = document.getElementById('saveEventNote');
+    const event = {
+      title: document.getElementById('edit-title').value.trim(),
+      theme: document.getElementById('edit-theme').value.trim(),
+      date: document.getElementById('edit-date').value.trim(),
+      time: document.getElementById('edit-time').value.trim(),
+      featuring: document.getElementById('edit-featuring').value.trim(),
+      ministering: document.getElementById('edit-ministering').value.trim(),
+      enquiries: document.getElementById('edit-enquiries').value.trim(),
+      note: document.getElementById('edit-note').value.trim()
+    };
+    note.textContent = 'Saving...';
+    try{
+      await db.doc(SITE_PATH).set({event}, {merge:true});
+      note.textContent = 'Saved — refresh the site to see it live.';
+    }catch(e){
+      note.textContent = 'Could not save — try again.';
+      console.error(e);
+    }
+  });
+
+  document.getElementById('saveScheduleBtn').addEventListener('click', async ()=>{
+    const note = document.getElementById('saveScheduleNote');
+    const days = parseScheduleText(document.getElementById('edit-schedule').value);
+    if(!days.length){ note.textContent = 'Nothing to save — check the format.'; return; }
+    note.textContent = 'Saving...';
+    try{
+      await db.doc(SITE_PATH).set({schedule: days}, {merge:true});
+      note.textContent = 'Saved — refresh the site to see it live.';
+    }catch(e){
+      note.textContent = 'Could not save — try again.';
+      console.error(e);
+    }
+  });
+</script>
+</body>
+</html>
